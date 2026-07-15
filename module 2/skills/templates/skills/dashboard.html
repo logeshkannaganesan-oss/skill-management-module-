@@ -1,0 +1,327 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skill Management Dashboard</title>
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="{% static 'skills/style.css' %}">
+</head>
+<body>
+
+    <!-- Dynamic Alerts Container -->
+    {% if messages %}
+    <div class="alerts-container">
+        {% for message in messages %}
+        <div class="alert-item alert-{{ message.tags }}">
+            <span>{{ message }}</span>
+            <button class="alert-close" onclick="this.parentElement.remove()">&times;</button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="container">
+        
+        <!-- Header -->
+        <header class="header-section">
+            <div class="header-title">
+                <h1>Skill Management</h1>
+                <p>Track, evaluate, and update your skill profile and proficiencies.</p>
+            </div>
+            <div class="user-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Student ID: 1
+            </div>
+        </header>
+
+        <!-- Stats strip -->
+        <div class="stats-strip">
+            <div class="stat-box total">
+                <div class="stat-number">{{ stats.total }}</div>
+                <div class="stat-label">Total Skills</div>
+            </div>
+            <div class="stat-box beginner">
+                <div class="stat-number">{{ stats.beginner }}</div>
+                <div class="stat-label">Beginner</div>
+            </div>
+            <div class="stat-box intermediate">
+                <div class="stat-number">{{ stats.intermediate }}</div>
+                <div class="stat-label">Intermediate</div>
+            </div>
+            <div class="stat-box advanced">
+                <div class="stat-number">{{ stats.advanced }}</div>
+                <div class="stat-label">Advanced</div>
+            </div>
+        </div>
+
+        <!-- Layout Grid -->
+        <div class="dashboard-grid">
+            
+            <!-- Left Column: Add/Update Form -->
+            <div class="glass-card">
+                <h2 class="glass-card-title" id="form-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    Register New Skill
+                </h2>
+                
+                <form method="POST" action="{% url 'dashboard' %}" id="skill-form">
+                    {% csrf_token %}
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="id_skill_name">Skill Name</label>
+                        {{ form.skill_name }}
+                        {% if form.skill_name.errors %}
+                        <div style="color: var(--accent-rose); font-size: 0.8rem; margin-top: 0.25rem;">
+                            {{ form.skill_name.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="id_skill_level">Skill Level</label>
+                        {{ form.skill_level }}
+                        {% if form.skill_level.errors %}
+                        <div style="color: var(--accent-rose); font-size: 0.8rem; margin-top: 0.25rem;">
+                            {{ form.skill_level.errors.0 }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add Skill
+                        </button>
+                        <button type="button" class="btn btn-action" id="cancel-edit-btn" style="display: none; width: auto;" onclick="resetForm()">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+
+                <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;">
+                    <strong style="color: var(--text-secondary);">Upsert Rule Enabled:</strong> If you input a skill name that is already in your list, the system will automatically update the existing skill to the new level rather than creating a duplicate entry.
+                </div>
+            </div>
+
+            <!-- Right Column: Visual Breakdown & Skills Table -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- Visual Proficiency Breakdown -->
+                <div class="glass-card">
+                    <h3 class="glass-card-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="20" x2="18" y2="10"></line>
+                            <line x1="12" y1="20" x2="12" y2="4"></line>
+                            <line x1="6" y1="20" x2="6" y2="14"></line>
+                        </svg>
+                        Proficiency Distribution
+                    </h3>
+                    
+                    <div class="chart-container">
+                        <!-- Beginner Ring -->
+                        <div class="progress-ring-item">
+                            <div class="ring-wrapper">
+                                <svg class="ring-svg">
+                                    <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                                    <circle class="ring-indicator beginner" cx="40" cy="40" r="35" style="stroke-dasharray: 220; stroke-dashoffset: calc(220 - (220 * {{ stats.beginner_pct }}) / 100);"></circle>
+                                </svg>
+                                <span class="ring-text">{{ stats.beginner_pct }}%</span>
+                            </div>
+                            <span class="ring-label">Beginner</span>
+                        </div>
+
+                        <!-- Intermediate Ring -->
+                        <div class="progress-ring-item">
+                            <div class="ring-wrapper">
+                                <svg class="ring-svg">
+                                    <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                                    <circle class="ring-indicator intermediate" cx="40" cy="40" r="35" style="stroke-dasharray: 220; stroke-dashoffset: calc(220 - (220 * {{ stats.intermediate_pct }}) / 100);"></circle>
+                                </svg>
+                                <span class="ring-text">{{ stats.intermediate_pct }}%</span>
+                            </div>
+                            <span class="ring-label">Intermediate</span>
+                        </div>
+
+                        <!-- Advanced Ring -->
+                        <div class="progress-ring-item">
+                            <div class="ring-wrapper">
+                                <svg class="ring-svg">
+                                    <circle class="ring-bg" cx="40" cy="40" r="35"></circle>
+                                    <circle class="ring-indicator advanced" cx="40" cy="40" r="35" style="stroke-dasharray: 220; stroke-dashoffset: calc(220 - (220 * {{ stats.advanced_pct }}) / 100);"></circle>
+                                </svg>
+                                <span class="ring-text">{{ stats.advanced_pct }}%</span>
+                            </div>
+                            <span class="ring-label">Advanced</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skills Table -->
+                <div class="glass-card" style="flex: 1;">
+                    <h3 class="glass-card-title">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                            <polyline points="10 9 9 9 8 9"></polyline>
+                        </svg>
+                        Skills Profile
+                    </h3>
+
+                    {% if skills %}
+                    <div class="table-wrapper">
+                        <table class="skills-table">
+                            <thead>
+                                <tr>
+                                    <th>Skill Name</th>
+                                    <th>Proficiency Level</th>
+                                    <th style="text-align: right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for skill in skills %}
+                                <tr>
+                                    <td style="font-weight: 600;">{{ skill.skill_name }}</td>
+                                    <td>
+                                        <span class="badge-pill {{ skill.skill_level|lower }}">
+                                            {{ skill.skill_level }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="table-actions">
+                                            <!-- Inline Edit Button (populates current values into the left card form) -->
+                                            <button class="btn-action" onclick="setEditMode('{{ skill.skill_name|escapejs }}', '{{ skill.skill_level|escapejs }}')">
+                                                Edit
+                                            </button>
+                                            
+                                            <!-- Delete Button using a tiny form for security and validation -->
+                                            <form method="POST" action="{% url 'delete_skill' skill.skill_id %}" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this skill?');">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn-action delete">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                        <p>No skills registered yet. Use the registration form to build your skill profile.</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Inline JavaScript -->
+    <script>
+        // Set the dashboard form to "Update Mode" and populate existing values
+        function setEditMode(skillName, skillLevel) {
+            const nameInput = document.getElementById('id_skill_name');
+            const levelSelect = document.getElementById('id_skill_level');
+            const formTitle = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+            
+            if (nameInput && levelSelect) {
+                nameInput.value = skillName;
+                levelSelect.value = skillLevel;
+                
+                if (formTitle) formTitle.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"></path>
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                    </svg>
+                    Update Skill Details
+                `;
+                
+                if (submitBtn) {
+                    submitBtn.innerHTML = `
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Update Skill
+                    `;
+                }
+                
+                if (cancelBtn) cancelBtn.style.display = 'inline-flex';
+                
+                // Focus and scroll to the input element smoothly
+                nameInput.focus();
+                nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+        
+        // Reset/Cancel edit mode and clear form inputs
+        function resetForm() {
+            const form = document.getElementById('skill-form');
+            const formTitle = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+            const cancelBtn = document.getElementById('cancel-edit-btn');
+            
+            if (form) {
+                form.reset();
+                if (formTitle) formTitle.innerHTML = `
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Register New Skill
+                `;
+                
+                if (submitBtn) {
+                    submitBtn.innerHTML = `
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Skill
+                    `;
+                }
+                
+                if (cancelBtn) cancelBtn.style.display = 'none';
+            }
+        }
+
+        // Auto-fadeout notifications after 4 seconds
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const alerts = document.querySelectorAll('.alert-item');
+                alerts.forEach(alert => {
+                    alert.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px) scale(0.95)';
+                    setTimeout(() => alert.remove(), 500);
+                });
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
